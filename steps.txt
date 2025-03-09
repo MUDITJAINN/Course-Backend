@@ -4,3 +4,16 @@ index.js - entry point created file
 npm i express
 hello world code from express site
 node index.js
+start : node index.js -> in package .json scripts to make command easier -> npm start 
+npm i nodemon - npm is node package manager to manage packages such as express   
+start : nodemon index.js -> so changes will be shown automatically we do not have to run server again and again
+npm i dotenv
+
+setup mongodb atlas -> new project -> project name -> create project -> create cluster -> free -> create deployment  -> get username and password of db then -> create database user
+-> choose a connection -> compass -> have or not have mongodb -> will generate connection string -> save in env with name suffix -> 
+
+npm i mongoose
+
+connect to database 
+schema create 
+
