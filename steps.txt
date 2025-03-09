@@ -1,0 +1,6 @@
+cd backend
+npm init -> package.json
+index.js - entry point created file 
+npm i express
+hello world code from express site
+node index.js
