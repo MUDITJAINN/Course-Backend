@@ -58,3 +58,27 @@ export const createCourse = async (req,res)=>{
     });
  }
 }
+
+export const updateCourse = async (req, res) => {
+    const {courseId} = req.params;
+    const { title, description, price, image } = req.body;
+    try {
+        const course = await Course.updateOne(
+        {
+            _id: courseId
+        },
+        {
+            title,
+            description,
+            price,
+            image: {
+                public_id: image?.public_id, 
+                url: image?.url 
+            }
+        })
+        res.status(201).json({message: "Course updated successfully"})
+    } catch (error) {
+        res.status(500).json({error: "Error in course updating"})
+        console.log("Error in course updating ",error)
+    }
+};

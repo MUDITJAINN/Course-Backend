@@ -25,3 +25,4 @@ Postman for api testing -> create workspace -> create collection -> set req type
 
 using express file upload(handeling req image upload to cloudinary) and cloudinary for image(as db cant store image it will store url <- res by cloudinary) 
 npm i cloudinary   
+
