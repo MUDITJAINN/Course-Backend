@@ -1,20 +1,21 @@
-import { config } from 'dotenv';
 import express from 'express';
-import { mongoose } from 'mongoose';
+import  dotenv  from 'dotenv';
+import mongoose from 'mongoose';
+import { v2 as cloudinary } from 'cloudinary';
 import courseRoutes from './routes/course.routes.js';
 import fileUpload from 'express-fileupload';
 
-config();
 const app = express();
+dotenv.config();
 
 //middleware
 app.use(express.json());
 app.use(fileUpload({
   useTempFiles : true,
-  tempFileDir : '/tmp/'
+  tempFileDir : '/tmp/',
 }));
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 4000;
 const DB_URI = process.env.MONGO_URI;
 
 try {
@@ -27,6 +28,12 @@ catch (error){
 
 // defining routes
 app.use("/api/v1/course", courseRoutes);
+
+cloudinary.config({ 
+  cloud_name: process.env.cloud_name, 
+  api_key: process.env.api_key, 
+  api_secret: process.env.api_secret 
+});
 
 app.listen(port, () => {
   console.log(`Course selling app listening on port ${port}`)
