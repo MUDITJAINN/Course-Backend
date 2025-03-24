@@ -82,3 +82,19 @@ export const updateCourse = async (req, res) => {
         console.log("Error in course updating ",error)
     }
 };
+
+export const deleteCourse = async (req, res) => {
+    const { courseId } = req.params;
+    try {
+      const course = await Course.findOneAndDelete({
+        _id: courseId,
+      });
+      if (!course) {
+        return res.status(404).json({ errors: "course not found" });
+      }
+      res.status(200).json({ message: "Course deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ errors: "Error in course deleting" });
+      console.log("Error in course deleting", error);
+    }
+  };    
