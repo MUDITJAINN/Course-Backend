@@ -98,3 +98,27 @@ export const deleteCourse = async (req, res) => {
       console.log("Error in course deleting", error);
     }
   };    
+
+export const getCourses = async (req, res) => {
+    try {
+      const courses = await Course.find({});
+      res.status(201).json({ courses });
+    } catch (error) {
+      res.status(500).json({ errors: "Error in getting courses" });
+      console.log("error to get courses", error);
+    }
+};
+
+export const courseDetails = async (req, res) => {
+    const { courseId } = req.params;
+    try {
+      const course = await Course.findById(courseId);
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+      res.status(200).json({ course });
+    } catch (error) {
+      res.status(500).json({ errors: "Error in getting course details" });
+      console.log("Error in course details", error);
+    }
+  };
