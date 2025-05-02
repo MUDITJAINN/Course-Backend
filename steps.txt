@@ -28,3 +28,15 @@ npm i cloudinary
 
 course created using create in DB
 course updated(PUT) using course id as a key in parameters and DB updated using updatedOne
+course read using GET and find in db for all courses 
+course read by id using findbyid 
+
+user signup - encrypting password using bycrypt (takes all details)
+            - validating data using zod 
+user login  - creating token using user id and jwt_password (email and password)
+            - creating cookies giving its name jwt and value as token 
+user logout - clear cookies (none)
+
+purchase -  (userid and courseid)
+         -  we must pass middleware check - bearer , token extract , then token -> user id check 
+         -  
