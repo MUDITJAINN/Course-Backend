@@ -4,12 +4,15 @@ import mongoose from 'mongoose';
 import { v2 as cloudinary } from 'cloudinary';
 import courseRoutes from './routes/course.routes.js';
 import userRoutes from "./routes/user.routes.js";
+import adminRoute from "./routes/admin.route.js";
 import fileUpload from 'express-fileupload';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 dotenv.config();
 
 //middleware
+app.use(cookieParser());
 app.use(express.json());
 app.use(fileUpload({
   useTempFiles : true,
@@ -30,6 +33,7 @@ catch (error){
 // defining routes
 app.use("/api/v1/course", courseRoutes);
 app.use("/api/v1/user", userRoutes);
+app.use("/api/v1/admin", adminRoute);
 
 cloudinary.config({ 
   cloud_name: process.env.cloud_name, 

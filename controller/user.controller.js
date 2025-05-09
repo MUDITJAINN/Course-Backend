@@ -83,14 +83,17 @@ export const login = async (req, res) => {
 };
 
 export const logout = (req, res) => {
-  try {
-    res.clearCookie("jwt");
-    res.status(200).json({ message: "Logged out successfully" });
-  } catch (error) {
-    res.status(500).json({ errors: "Error in logout" });
-    console.log("Error in logout", error);
-  }
-};
+    try {
+      if(!req.cookies.jwt) {
+          return res.status(200).json({ message: "Kindly login first" });
+          }
+      res.clearCookie("jwt");
+      res.status(200).json({ message: "Logged out successfully" });
+    } catch (error) {
+      res.status(500).json({ errors: "Error in logout" });
+      console.log("Error in logout", error);
+    }
+  };
 
 export const purchase = async (req, res) => {
   const userId = req.userId;
