@@ -1,0 +1,21 @@
+--> Headers in Postman
+Headers are key-value pairs sent with your request that provide metadata to the server.
+
+Common uses:
+Authorization: e.g., Authorization: Bearer <token>
+Content-Type: e.g., application/json tells the server the data is in JSON
+Accept: tells the server what response format the client expects (like application/json)
+Think of headers like the envelope of a letter – it helps route and understand the data inside.
+
+
+--> 🔐 Authorization: Bearer <token> – What It Does
+This header is used to securely authenticate your request to an API.
+
+🔸 Bearer Token Explained:
+A token is like a digital key that proves you are allowed to access certain data or perform actions.
+When you include Authorization: Bearer <token> in the request header:
+You're telling the server: “Here is my token — please verify it and let me in.”
+The server checks if the token is valid, not expired, and has permission.
+
+
+--> 

@@ -23,7 +23,11 @@ const courseSchema = new mongoose.Schema({
           type: String,
           required: true
         }  
-    }
+    },
+    creatorId:{
+    type: mongoose.Types.ObjectId,
+    ref: "User",
+    },
 });
 
 export const Course = mongoose.model('Course', courseSchema);

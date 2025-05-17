@@ -41,4 +41,4 @@ purchase -  (userid and courseid)
          -  we must pass middleware check - bearer , token extract , then token -> user id check 
          
 admin - signup login and logout similar to user
-      -  
+      - now only admin can create update and delete course as admin middleware added to all 3 endpoint routes  

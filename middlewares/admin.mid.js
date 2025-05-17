@@ -13,9 +13,9 @@ function adminMiddleware(req, res, next) {
     const decoded = jwt.verify(token, config.JWT_ADMIN_PASSWORD);
     console.log(decoded);
     req.adminId = decoded.id;
-
     next();
-  } catch (error) {
+  } 
+  catch (error) {
     return res.status(401).json({ errors: "Invalid token or expired" });
   }
 }
