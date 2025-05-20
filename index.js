@@ -7,6 +7,7 @@ import userRoutes from "./routes/user.routes.js";
 import adminRoute from "./routes/admin.route.js";
 import fileUpload from 'express-fileupload';
 import cookieParser from 'cookie-parser';
+import cors from "cors";
 
 const app = express();
 dotenv.config();
@@ -18,6 +19,14 @@ app.use(fileUpload({
   useTempFiles : true,
   tempFileDir : '/tmp/',
 }));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 const port = process.env.PORT || 4000;
 const DB_URI = process.env.MONGO_URI;
