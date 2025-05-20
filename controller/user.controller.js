@@ -23,6 +23,7 @@ export const signup = async (req, res) => {
   });
 
   const validatedData = userSchema.safeParse(req.body);
+  
   if (!validatedData.success) {
     return res
       .status(400)
