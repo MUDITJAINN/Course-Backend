@@ -11,7 +11,6 @@ import cors from "cors";
 
 const app = express();
 dotenv.config();
-
 //middleware
 app.use(cookieParser());
 app.use(express.json());
