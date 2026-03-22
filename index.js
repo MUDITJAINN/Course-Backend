@@ -5,6 +5,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import courseRoutes from './routes/course.routes.js';
 import userRoutes from "./routes/user.routes.js";
 import adminRoute from "./routes/admin.route.js";
+import noteRoutes from "./routes/note.routes.js";
 import fileUpload from 'express-fileupload';
 import cookieParser from 'cookie-parser';
 import cors from "cors";
@@ -42,6 +43,7 @@ catch (error){
 app.use("/api/v1/course", courseRoutes);
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/admin", adminRoute);
+app.use("/api/v1/notes", noteRoutes);
 
 cloudinary.config({ 
   cloud_name: process.env.cloud_name, 

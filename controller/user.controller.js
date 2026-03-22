@@ -5,6 +5,8 @@ import { z } from "zod"; // for validation(data integrity and correctness) of da
 import config from "../config.js";
 import { Purchase } from "../models/purchase.model.js";
 import { Course } from "../models/course.model.js"; 
+import { NotePurchase } from "../models/notePurchase.model.js";
+import { Note } from "../models/note.model.js";
 
 export const signup = async (req, res) => {
   const { firstName, lastName, email, password } = req.body;
@@ -111,7 +113,13 @@ export const purchase = async (req, res) => {
       _id: { $in: purchasedCourseId }, // to get all the courses which are purchased by user
     });
 
-    res.status(200).json({ purchased, courseData });
+    const purchasedNotes = await NotePurchase.find({ userId, status: "SUCCESS" });
+    const purchasedNoteIds = purchasedNotes.map((item) => item.noteId);
+    const notesData = await Note.find({
+      _id: { $in: purchasedNoteIds },
+    });
+
+    res.status(200).json({ purchased, courseData, purchasedNotes, notesData });
   } catch (error) {
     res.status(500).json({ errors: "Error in purchases" });
     console.log("Error in purchase", error);

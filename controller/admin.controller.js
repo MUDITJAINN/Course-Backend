@@ -52,9 +52,13 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
   try {
     const admin = await Admin.findOne({ email: email });
+    if (!admin) {
+      return res.status(403).json({ errors: "Invalid credentials" });
+    }
+
     const isPasswordCorrect = await bcrypt.compare(password, admin.password);
 
-    if (!admin || !isPasswordCorrect) {
+    if (!isPasswordCorrect) {
       return res.status(403).json({ errors: "Invalid credentials" });
     }
 
