@@ -1,0 +1,13 @@
+React Basics Notes
+==================
+
+This is a sample downloadable file.
+Replace this with your real paid notes PDF/content.
+
+Contents (sample):
+1. What is React
+2. Components
+3. Props
+4. State
+5. useEffect
+6. Project structure

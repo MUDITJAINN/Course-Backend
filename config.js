@@ -17,6 +17,7 @@ const PHONEPE_CLIENT_VERSION =
 // Used to build redirect/callback URLs in payment flow.
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:4001";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const NOTE_FILES_DIR = process.env.NOTE_FILES_DIR || "secure-notes";
 
 export default {
   JWT_USER_PASSWORD,
@@ -29,4 +30,5 @@ export default {
   PHONEPE_CLIENT_VERSION,
   BACKEND_URL,
   FRONTEND_URL,
+  NOTE_FILES_DIR,
 };

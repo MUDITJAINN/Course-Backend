@@ -1,4 +1,6 @@
 import config from "../config.js";
+import fs from "fs";
+import path from "path";
 import { NotePurchase } from "../models/notePurchase.model.js";
 import { Note } from "../models/note.model.js";
 
@@ -55,6 +57,36 @@ const getOrderState = (statusData) =>
 
 const getOrderAmount = (statusData) =>
   Number(statusData?.amount ?? statusData?.data?.amount ?? statusData?.paymentDetails?.amount);
+
+// Files are stored on the backend (Render). They should NOT be in `frontend/public`,
+// otherwise they are downloadable via direct URL / inspect.
+const SECURE_NOTES_DIR = path.isAbsolute(config.NOTE_FILES_DIR)
+  ? config.NOTE_FILES_DIR
+  : path.join(process.cwd(), config.NOTE_FILES_DIR);
+
+const getBasenameFromUrl = (url) => {
+  if (!url || typeof url !== "string") return "";
+  const cleaned = url.split("?")[0].split("#")[0];
+  return cleaned.split("/").filter(Boolean).pop() || "";
+};
+
+const getNoteFileOnDisk = (note, kind) => {
+  const fileUrl = kind === "preview" ? note.previewFileUrl : note.downloadFileUrl;
+  const filename = getBasenameFromUrl(fileUrl);
+  if (!filename) return null;
+  const fullPath = path.join(SECURE_NOTES_DIR, filename);
+  if (!fs.existsSync(fullPath)) return null;
+  return { fullPath, filename };
+};
+
+const getMimeType = (filename) => {
+  const lower = filename.toLowerCase();
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (lower.endsWith(".txt")) return "text/plain; charset=utf-8";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  return "application/octet-stream";
+};
 
 export const createNotePayment = async (req, res) => {
   const { noteId } = req.params;
@@ -276,7 +308,7 @@ export const getNotes = async (req, res) => {
 
 export const createNote = async (req, res) => {
   const adminId = req.adminId;
-  const { title, description, price, pages, previewImageUrl, downloadFileUrl } = req.body;
+  const { title, description, price, pages, previewImageUrl, previewFileUrl, downloadFileUrl } = req.body;
   try {
     if (!title || !description || !price || !pages || !previewImageUrl || !downloadFileUrl) {
       return res.status(400).json({ errors: "All note fields are required" });
@@ -287,6 +319,7 @@ export const createNote = async (req, res) => {
       price: Number(price),
       pages: Number(pages),
       previewImageUrl,
+      previewFileUrl: previewFileUrl || "",
       downloadFileUrl,
       creatorId: adminId,
     });
@@ -315,5 +348,61 @@ export const phonePeCallback = async (req, res) => {
   } catch (error) {
     console.log("Error in phonePeCallback", error);
     return res.status(500).json({ errors: "Error handling callback" });
+  }
+};
+
+// Preview file is public, but served from backend private storage.
+// Note: this does not prevent someone from viewing the PDF if they call this endpoint directly.
+// Download is protected by payment verification (see `downloadNoteFile`).
+export const previewNoteFile = async (req, res) => {
+  const { noteId } = req.params;
+  try {
+    const note = await Note.findOne({ _id: noteId, isPublished: true });
+    if (!note) return res.status(404).json({ errors: "Note not found" });
+
+    const file = getNoteFileOnDisk(note, "preview") || getNoteFileOnDisk(note, "download");
+    if (!file) return res.status(404).json({ errors: "Preview file missing on server" });
+
+    const mime = getMimeType(file.filename);
+    res.setHeader("Content-Type", mime);
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="${file.filename}"`
+    );
+    fs.createReadStream(file.fullPath).pipe(res);
+  } catch (error) {
+    console.log("Error in previewNoteFile", error);
+    return res.status(500).json({ errors: "Error serving preview file" });
+  }
+};
+
+// Download is protected: only users who successfully paid can download from backend.
+export const downloadNoteFile = async (req, res) => {
+  const { noteId } = req.params;
+  const { userId } = req;
+  try {
+    const note = await Note.findOne({ _id: noteId, isPublished: true });
+    if (!note) return res.status(404).json({ errors: "Note not found" });
+
+    const purchase = await NotePurchase.findOne({
+      userId,
+      noteId: note._id,
+      status: "SUCCESS",
+    });
+    if (!purchase) return res.status(403).json({ errors: "Payment required to download" });
+
+    const file = getNoteFileOnDisk(note, "download");
+    if (!file) return res.status(404).json({ errors: "Download file missing on server" });
+
+    const mime = getMimeType(file.filename);
+    res.setHeader("Content-Type", mime);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${file.filename}"`
+    );
+    fs.createReadStream(file.fullPath).pipe(res);
+  } catch (error) {
+    console.log("Error in downloadNoteFile", error);
+    return res.status(500).json({ errors: "Error serving download file" });
   }
 };

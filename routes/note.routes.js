@@ -5,7 +5,9 @@ import {
   createNote,
   createNotePayment,
   getNotes,
+  downloadNoteFile,
   getMyPurchasedNotes,
+  previewNoteFile,
   phonePeCallback,
   verifyNotePayment,
 } from "../controller/note.controller.js";
@@ -13,6 +15,8 @@ import {
 const router = express.Router();
 
 router.get("/all", getNotes);
+router.get("/preview/:noteId", previewNoteFile);
+router.get("/download/:noteId", userMiddleware, downloadNoteFile);
 router.post("/create", adminMiddleware, createNote);
 router.post("/create-payment/:noteId", userMiddleware, createNotePayment);
 router.get("/verify-payment", userMiddleware, verifyNotePayment);

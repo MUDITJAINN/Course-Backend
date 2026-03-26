@@ -1,0 +1,13 @@
+Java + DSA Notes
+================
+
+This is a sample downloadable file.
+Replace this with your real paid notes PDF/content.
+
+Contents (sample):
+1. Big-O basics
+2. Arrays and Strings
+3. Linked List
+4. Stack and Queue
+5. Trees and Graph intro
+6. Interview revision checklist
