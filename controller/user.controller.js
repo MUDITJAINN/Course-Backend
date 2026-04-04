@@ -102,13 +102,12 @@ export const purchase = async (req, res) => {
   const userId = req.userId;
 
   try {
-    const purchased = await Purchase.find({ userId });
+    const purchased = await Purchase.find({
+      userId,
+      $nor: [{ status: "PENDING" }, { status: "FAILED" }],
+    });
 
-    let purchasedCourseId = [];
-
-    for (let i = 0; i < purchased.length; i++) {
-      purchasedCourseId.push(purchased[i].courseId); // to get the courseId of purchased courses
-    }
+    const purchasedCourseId = purchased.map((p) => p.courseId);
     const courseData = await Course.find({
       _id: { $in: purchasedCourseId }, // to get all the courses which are purchased by user
     });

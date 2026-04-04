@@ -3,60 +3,13 @@ import fs from "fs";
 import path from "path";
 import { NotePurchase } from "../models/notePurchase.model.js";
 import { Note } from "../models/note.model.js";
-
-// Basic env validation so we fail fast with helpful error.
-const isPhonePeConfigured = () =>
-  config.PHONEPE_CLIENT_ID && config.PHONEPE_CLIENT_SECRET && config.PHONEPE_CLIENT_VERSION;
-
-const normalizeBaseUrl = (url) => (url || "").trim().replace(/\/+$/, "");
-const getPhonePeAuthBaseUrl = () => normalizeBaseUrl(config.PHONEPE_AUTH_BASE_URL);
-const getPhonePeCheckoutBaseUrl = () => normalizeBaseUrl(config.PHONEPE_CHECKOUT_BASE_URL);
-
-let phonePeTokenCache = {
-  token: null,
-  expiresAtMs: 0,
-};
-
-const getPhonePeAccessToken = async () => {
-  const now = Date.now();
-  if (phonePeTokenCache.token && phonePeTokenCache.expiresAtMs - now > 60 * 1000) {
-    return phonePeTokenCache.token;
-  }
-
-  const body = new URLSearchParams({
-    client_id: config.PHONEPE_CLIENT_ID,
-    client_version: String(config.PHONEPE_CLIENT_VERSION),
-    client_secret: config.PHONEPE_CLIENT_SECRET,
-    grant_type: "client_credentials",
-  });
-
-  const tokenResponse = await fetch(`${getPhonePeAuthBaseUrl()}/v1/oauth/token`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body,
-  });
-
-  const tokenData = await tokenResponse.json();
-  if (!tokenResponse.ok || !tokenData?.access_token) {
-    throw new Error(tokenData?.message || "Unable to fetch PhonePe auth token");
-  }
-
-  const expiresAtSec = Number(tokenData.expires_at || 0);
-  phonePeTokenCache = {
-    token: tokenData.access_token,
-    expiresAtMs: expiresAtSec ? expiresAtSec * 1000 : Date.now() + 10 * 60 * 1000,
-  };
-
-  return phonePeTokenCache.token;
-};
-
-const getOrderState = (statusData) =>
-  statusData?.state || statusData?.data?.state || statusData?.orderState || null;
-
-const getOrderAmount = (statusData) =>
-  Number(statusData?.amount ?? statusData?.data?.amount ?? statusData?.paymentDetails?.amount);
+import {
+  getOrderAmount,
+  getOrderState,
+  getPhonePeAccessToken,
+  getPhonePeCheckoutBaseUrl,
+  isPhonePeConfigured,
+} from "../services/phonepe.service.js";
 
 // Files are stored on the backend (Render). They should NOT be in `frontend/public`,
 // otherwise they are downloadable via direct URL / inspect.
@@ -351,16 +304,14 @@ export const phonePeCallback = async (req, res) => {
   }
 };
 
-// Preview file is public, but served from backend private storage.
-// Note: this does not prevent someone from viewing the PDF if they call this endpoint directly.
-// Download is protected by payment verification (see `downloadNoteFile`).
+// Preview file only (never the full download asset). Full file is served only via `downloadNoteFile` after payment.
 export const previewNoteFile = async (req, res) => {
   const { noteId } = req.params;
   try {
     const note = await Note.findOne({ _id: noteId, isPublished: true });
     if (!note) return res.status(404).json({ errors: "Note not found" });
 
-    const file = getNoteFileOnDisk(note, "preview") || getNoteFileOnDisk(note, "download");
+    const file = getNoteFileOnDisk(note, "preview");
     if (!file) return res.status(404).json({ errors: "Preview file missing on server" });
 
     const mime = getMimeType(file.filename);

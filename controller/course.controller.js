@@ -1,7 +1,15 @@
-// business logic - receives user input, processes it and sends it to the 
-import {Course} from '../models/course.model.js'
-import { v2 as cloudinary } from 'cloudinary';
-import { Purchase } from '../models/purchase.model.js';
+// business logic - receives user input, processes it and sends it to the
+import { Course } from "../models/course.model.js";
+import { v2 as cloudinary } from "cloudinary";
+import { Purchase } from "../models/purchase.model.js";
+import config from "../config.js";
+import {
+  getOrderAmount,
+  getOrderState,
+  getPhonePeAccessToken,
+  getPhonePeCheckoutBaseUrl,
+  isPhonePeConfigured,
+} from "../services/phonepe.service.js";
 
 export const createCourse = async (req, res) => {
   const adminId = req.adminId;
@@ -121,31 +129,185 @@ export const courseDetails = async (req, res) => {
     }
   };
 
-  export const buyCourses = async (req, res) => {
-    const { userId } = req;
-    const { courseId } = req.params;
-  
-    try {
-      const course = await Course.findById(courseId);
-      if (!course) {
-        return res.status(404).json({ errors: "Course not found" });
-      }
-      const existingPurchase = await Purchase.findOne({ userId, courseId });
-      if (existingPurchase) {
-        return res
-          .status(400)
-          .json({ errors: "User has already purchased this course" });
-      }
-  
-      const newPurchase = new Purchase({ userId, courseId });
-      await newPurchase.save();
+const hasSuccessfulCoursePurchase = (userId, courseId) =>
+  Purchase.findOne({
+    userId,
+    courseId,
+    $nor: [{ status: "PENDING" }, { status: "FAILED" }],
+  });
 
-      res.status(201).json({
-        message: "Course purchased successfully",
-        newPurchase,
-      });
-    } catch (error) {
-      res.status(500).json({ errors: "Error in course buying" });
-      console.log("error in course buying ", error);
+export const createCoursePayment = async (req, res) => {
+  const { courseId } = req.params;
+  const { userId } = req;
+
+  if (!isPhonePeConfigured()) {
+    return res.status(500).json({
+      errors:
+        "PhonePe is not configured. Set PHONEPE_CLIENT_ID, PHONEPE_CLIENT_SECRET and PHONEPE_CLIENT_VERSION in backend env.",
+    });
+  }
+
+  try {
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ errors: "Course not found" });
     }
-  };  
+
+    const alreadyPurchased = await hasSuccessfulCoursePurchase(userId, course._id);
+    if (alreadyPurchased) {
+      return res.status(400).json({ errors: "You already purchased this course" });
+    }
+
+    const merchantTransactionId = `COURSE_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+
+    const accessToken = await getPhonePeAccessToken();
+    const requestPayload = {
+      merchantOrderId: merchantTransactionId,
+      amount: course.price * 100,
+      paymentFlow: {
+        type: "PG_CHECKOUT",
+        message: `Payment for ${course.title}`,
+        merchantUrls: {
+          redirectUrl: `${config.FRONTEND_URL}/buy/${encodeURIComponent(
+            courseId
+          )}?merchantOrderId=${encodeURIComponent(merchantTransactionId)}`,
+        },
+      },
+    };
+
+    const phonePeResponse = await fetch(`${getPhonePeCheckoutBaseUrl()}/checkout/v2/pay`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `O-Bearer ${accessToken}`,
+        accept: "application/json",
+      },
+      body: JSON.stringify(requestPayload),
+    });
+
+    const data = await phonePeResponse.json();
+    const hasRedirectUrl = Boolean(data?.redirectUrl || data?.data?.redirectUrl);
+    const isCreatePaymentSuccess = phonePeResponse.ok && hasRedirectUrl;
+
+    if (!isCreatePaymentSuccess) {
+      return res.status(400).json({
+        errors: data?.message || "Unable to start payment",
+        data,
+      });
+    }
+
+    await Purchase.create({
+      userId,
+      courseId: course._id,
+      amountInPaise: course.price * 100,
+      merchantTransactionId,
+      status: "PENDING",
+      gatewayResponse: data,
+    });
+
+    const paymentUrl = data?.redirectUrl || data?.data?.redirectUrl || null;
+    if (!paymentUrl) {
+      return res.status(400).json({ errors: "PhonePe payment URL not found" });
+    }
+
+    return res.status(200).json({
+      message: "Payment initiated",
+      paymentUrl,
+      merchantTransactionId,
+    });
+  } catch (error) {
+    console.log("Error in createCoursePayment", error);
+    return res.status(500).json({ errors: "Error in creating course payment" });
+  }
+};
+
+export const verifyCoursePayment = async (req, res) => {
+  const { courseId, merchantOrderId, transactionId } = req.query;
+  const { userId } = req;
+  const resolvedOrderId = merchantOrderId || transactionId;
+
+  if (!courseId || !resolvedOrderId) {
+    return res.status(400).json({ errors: "courseId and merchantOrderId are required" });
+  }
+
+  if (!isPhonePeConfigured()) {
+    return res.status(500).json({
+      errors:
+        "PhonePe is not configured. Set PHONEPE_CLIENT_ID, PHONEPE_CLIENT_SECRET and PHONEPE_CLIENT_VERSION in backend env.",
+    });
+  }
+
+  try {
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ errors: "Course not found" });
+    }
+
+    const existingPayment = await Purchase.findOne({
+      userId,
+      courseId,
+      merchantTransactionId: resolvedOrderId,
+    });
+
+    if (!existingPayment) {
+      return res.status(404).json({ errors: "Payment transaction not found for this user" });
+    }
+
+    const accessToken = await getPhonePeAccessToken();
+    const statusCandidates = [
+      `${getPhonePeCheckoutBaseUrl()}/checkout/v2/order/${encodeURIComponent(
+        resolvedOrderId
+      )}/status`,
+      `${getPhonePeCheckoutBaseUrl()}/checkout/v2/status/${encodeURIComponent(resolvedOrderId)}`,
+    ];
+    let statusData = null;
+    let statusResponse = null;
+    for (const url of statusCandidates) {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `O-Bearer ${accessToken}`,
+          accept: "application/json",
+        },
+      });
+      const data = await response.json();
+      if (response.ok) {
+        statusResponse = response;
+        statusData = data;
+        break;
+      }
+      if (!statusData) {
+        statusResponse = response;
+        statusData = data;
+      }
+    }
+
+    const paidAmount = getOrderAmount(statusData);
+    const paymentState = getOrderState(statusData);
+    const isSuccess =
+      statusResponse.ok &&
+      ["COMPLETED", "SUCCESS", "PAID"].includes(paymentState) &&
+      paidAmount === course.price * 100;
+
+    existingPayment.gatewayResponse = statusData;
+    existingPayment.status = isSuccess ? "SUCCESS" : "FAILED";
+    await existingPayment.save();
+
+    if (!isSuccess) {
+      return res.status(400).json({
+        errors: "Payment not completed or amount mismatch",
+        paymentState: paymentState || "UNKNOWN",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Payment verified. Course unlocked.",
+      courseId,
+      unlocked: true,
+    });
+  } catch (error) {
+    console.log("Error in verifyCoursePayment", error);
+    return res.status(500).json({ errors: "Error in payment verification" });
+  }
+};
