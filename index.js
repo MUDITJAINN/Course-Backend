@@ -32,6 +32,9 @@ delete cspDefaults["frame-ancestors"];
 
 app.use(
   helmet({
+    // Helmet otherwise sets X-Frame-Options=SAMEORIGIN which will block cross-site iframes.
+    // We rely on CSP frame-ancestors instead.
+    frameguard: false,
     // Allow frontend to embed preview PDFs/images in iframes when needed
     contentSecurityPolicy: {
       useDefaults: true,
