@@ -25,13 +25,18 @@ const rawAllowedOrigins = [
 
 const allowedOrigins = rawAllowedOrigins.map((o) => String(o).replace(/\/+$/, ""));
 
+const cspDefaults = helmet.contentSecurityPolicy.getDefaultDirectives();
+// Avoid duplicate frame-ancestors directives (some environments/frameworks may inject one)
+delete cspDefaults.frameAncestors;
+delete cspDefaults["frame-ancestors"];
+
 app.use(
   helmet({
     // Allow frontend to embed preview PDFs/images in iframes when needed
     contentSecurityPolicy: {
       useDefaults: true,
       directives: {
-        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        ...cspDefaults,
         frameAncestors: ["'self'", ...allowedOrigins],
       },
     },
