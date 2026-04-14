@@ -9,10 +9,19 @@ import noteRoutes from "./routes/note.routes.js";
 import fileUpload from 'express-fileupload';
 import cookieParser from 'cookie-parser';
 import cors from "cors";
+import compression from "compression";
+import helmet from "helmet";
 
 const app = express();
 dotenv.config();
 //middleware
+app.disable("x-powered-by");
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  })
+);
+app.use(compression());
 app.use(cookieParser());
 app.use(express.json());
 app.use(fileUpload({
