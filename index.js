@@ -16,8 +16,25 @@ const app = express();
 dotenv.config();
 //middleware
 app.disable("x-powered-by");
+
+const rawAllowedOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.FRONTEND_URL1,
+  process.env.FRONTEND_URL2,
+].filter(Boolean);
+
+const allowedOrigins = rawAllowedOrigins.map((o) => String(o).replace(/\/+$/, ""));
+
 app.use(
   helmet({
+    // Allow frontend to embed preview PDFs/images in iframes when needed
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        frameAncestors: ["'self'", ...allowedOrigins],
+      },
+    },
     crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
