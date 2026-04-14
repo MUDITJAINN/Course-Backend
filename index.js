@@ -18,7 +18,7 @@ dotenv.config();
 app.disable("x-powered-by");
 
 const rawAllowedOrigins = [
-  process.env.FRONTEND_URL,
+  process.env.FRONTEND_URL3,
   process.env.FRONTEND_URL1,
   process.env.FRONTEND_URL2,
 ].filter(Boolean);
