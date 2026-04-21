@@ -1,6 +1,15 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+const normalizeBaseUrl = (url) => String(url || "").trim().replace(/\/+$/, "");
+
+const normalizeHttpUrl = (url, fallback) => {
+  const raw = normalizeBaseUrl(url);
+  if (!raw) return normalizeBaseUrl(fallback);
+  if (!/^https?:\/\//i.test(raw)) return `https://${raw}`;
+  return raw;
+};
+
 const JWT_USER_PASSWORD = process.env.JWT_USER_PASSWORD;
 const JWT_ADMIN_PASSWORD = process.env.JWT_ADMIN_PASSWORD;
 // PhonePe values below come from your PhonePe merchant dashboard.
@@ -15,10 +24,8 @@ const PHONEPE_CLIENT_SECRET =
 const PHONEPE_CLIENT_VERSION =
   process.env.PHONEPE_CLIENT_VERSION || process.env.PHONEPE_SALT_INDEX || "1";
 // Used to build redirect/callback URLs in payment flow.
-// const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:4001";
-// const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
-const BACKEND_URL = process.env.BACKEND_URL;
-const FRONTEND_URL = process.env.FRONTEND_URL;
+const BACKEND_URL = normalizeHttpUrl(process.env.BACKEND_URL, "http://localhost:4001");
+const FRONTEND_URL = normalizeHttpUrl(process.env.FRONTEND_URL, "http://localhost:5173");
 const NOTE_FILES_DIR = process.env.NOTE_FILES_DIR || "secure-notes";
 
 export default {
