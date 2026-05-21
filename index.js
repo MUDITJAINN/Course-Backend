@@ -6,6 +6,9 @@ import courseRoutes from './routes/course.routes.js';
 import userRoutes from "./routes/user.routes.js";
 import adminRoute from "./routes/admin.route.js";
 import noteRoutes from "./routes/note.routes.js";
+import { mountChatbot } from "./ai-chatbot/index.js";
+import { Course } from "./models/course.model.js";
+import { Note } from "./models/note.model.js";
 import fileUpload from 'express-fileupload';
 import cookieParser from 'cookie-parser';
 import cors from "cors";
@@ -17,13 +20,31 @@ dotenv.config();
 //middleware
 app.disable("x-powered-by");
 
-const rawAllowedOrigins = [
-  process.env.FRONTEND_URL1,
-  process.env.FRONTEND_URL2,
-  process.env.FRONTEND_URL3,
-].filter(Boolean);
+const normalizeOriginForCsp = (url) => {
+  const cleaned = String(url || "")
+    .trim()
+    .replace(/^["']+|["']+$/g, "")
+    .replace(/[;,]+$/g, "");
+  if (!cleaned) return null;
+  try {
+    return new URL(cleaned).origin;
+  } catch {
+    return cleaned.replace(/\/+$/, "");
+  }
+};
 
-const allowedOrigins = rawAllowedOrigins.map((o) => String(o).replace(/\/+$/, ""));
+const frameAncestorOrigins = [
+  ...new Set(
+    [
+      process.env.FRONTEND_URL1,
+      process.env.FRONTEND_URL2,
+      process.env.FRONTEND_URL3,
+      process.env.FRONTEND_URL4,
+    ]
+      .map(normalizeOriginForCsp)
+      .filter(Boolean)
+  ),
+];
 
 const cspDefaults = helmet.contentSecurityPolicy.getDefaultDirectives();
 // Avoid duplicate frame-ancestors directives (some environments/frameworks may inject one)
@@ -40,7 +61,7 @@ app.use(
       useDefaults: true,
       directives: {
         ...cspDefaults,
-        frameAncestors: ["'self'", ...allowedOrigins],
+        frameAncestors: ["'self'", ...frameAncestorOrigins],
       },
     },
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -56,13 +77,14 @@ app.use(fileUpload({
 app.use(
   cors({
     origin: [
-      process.env.FRONTEND_URL,
       process.env.FRONTEND_URL1, 
       process.env.FRONTEND_URL2,
       process.env.FRONTEND_URL3,
+      process.env.FRONTEND_URL4,
+      process.env.BACKEND_URL,
     ],
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
@@ -83,6 +105,23 @@ app.use("/api/v1/course", courseRoutes);
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/admin", adminRoute);
 app.use("/api/v1/notes", noteRoutes);
+
+// AI chatbot — copy the `ai-chatbot` folder to reuse in other Express apps
+mountChatbot(app, {
+  siteName: "Programming With Mudit",
+  fetchCourses: async () =>
+    Course.find({})
+      .select("title description price")
+      .sort({ _id: -1 })
+      .limit(40)
+      .lean(),
+  fetchNotes: async () =>
+    Note.find({ isPublished: true })
+      .select("title description price pages")
+      .sort({ createdAt: -1 })
+      .limit(40)
+      .lean(),
+});
 
 cloudinary.config({ 
   cloud_name: process.env.cloud_name, 
