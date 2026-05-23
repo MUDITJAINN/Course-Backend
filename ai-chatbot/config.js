@@ -30,25 +30,21 @@ export function loadChatbotConfig(overrides = {}) {
      * OpenAI: https://api.openai.com/v1
      * Groq:   https://api.groq.com/openai/v1
      */
-    baseUrl: (env.CHATBOT_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, ""),
+    baseUrl: (env.CHATBOT_BASE_URL || "").replace(/\/+$/, ""),
 
-    model: (env.CHATBOT_MODEL || "gpt-4o-mini").trim(),
+    model: (env.CHATBOT_MODEL || "").trim(),
 
     /** Hard cap on how much site context we inject into the system prompt */
-    maxContextChars: toInt(env.CHATBOT_MAX_CONTEXT_CHARS, 12000),
+    maxContextChars: toInt(env.CHATBOT_MAX_CONTEXT_CHARS, 0),
 
-    /** Simple in-memory rate limit per IP (requests per minute) */
-    rateLimitPerMinute: toInt(env.CHATBOT_RATE_LIMIT_PER_MIN, 15),
+    rateLimitPerMinute: toInt(env.CHATBOT_RATE_LIMIT_PER_MIN, 0),
 
-    /** Max tokens in the model reply */
-    maxTokens: toInt(env.CHATBOT_MAX_TOKENS, 700),
+    maxTokens: toInt(env.CHATBOT_MAX_TOKENS, 0),
 
-    temperature: Number(env.CHATBOT_TEMPERATURE ?? 0.4),
+    temperature: Number(env.CHATBOT_TEMPERATURE ?? 0),
 
-    /** Route mount path segment, e.g. /api/v1/chatbot */
-    routePath: (env.CHATBOT_ROUTE_PATH || "/api/v1/chatbot").trim(),
+    routePath: (env.CHATBOT_ROUTE_PATH || "").trim(),
 
-    /** How many user+assistant pairs we load from MongoDB per request */
-    maxHistoryTurns: toInt(env.CHATBOT_MAX_HISTORY_TURNS, 8),
+    maxHistoryTurns: toInt(env.CHATBOT_MAX_HISTORY_TURNS, 0),
   };
 }
