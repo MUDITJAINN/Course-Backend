@@ -17,16 +17,12 @@ export async function createChatCompletion({
   maxTokens = 700,
   temperature = 0.4,
 }) {
-  if (!apiKey) {
-    throw new Error("CHATBOT_API_KEY is not configured on the server.");
-  }
+  const headers = { "Content-Type": "application/json" };
+  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
 
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
+    headers,
     body: JSON.stringify({
       model,
       messages,
@@ -64,16 +60,12 @@ export async function* streamChatCompletion({
   maxTokens = 700,
   temperature = 0.4,
 }) {
-  if (!apiKey) {
-    throw new Error("CHATBOT_API_KEY is not configured on the server.");
-  }
+  const headers = { "Content-Type": "application/json" };
+  if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
 
   const response = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
+    headers,
     body: JSON.stringify({
       model,
       messages,

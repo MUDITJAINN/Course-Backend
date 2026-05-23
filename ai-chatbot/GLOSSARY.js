@@ -73,3 +73,9 @@
  */
 
 export const CHATBOT_LEVEL = 2;
+
+/** Level 3: per-note/course AI tutor with RAG — see backend/ai-tutor/ */
+export const TUTOR_LEVEL = 3;
+
+/** Level 4: Qdrant vector DB — TUTOR_VECTOR_STORE=qdrant */
+export const TUTOR_LEVEL_QDRANT = 4;
