@@ -43,7 +43,8 @@ export function loadChatbotConfig(overrides = {}) {
 
     temperature: Number(env.CHATBOT_TEMPERATURE ?? 0),
 
-    routePath: (env.CHATBOT_ROUTE_PATH || "").trim(),
+    /** Must match frontend CHATBOT_API_URL (default ${BACKEND}/chatbot) */
+    routePath: (env.CHATBOT_ROUTE_PATH || "/api/v1/chatbot").trim(),
 
     maxHistoryTurns: toInt(env.CHATBOT_MAX_HISTORY_TURNS, 0),
   };

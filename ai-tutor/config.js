@@ -34,7 +34,7 @@ export function loadTutorConfig(overrides = {}) {
 
     embedModel: (env.TUTOR_EMBED_MODEL || "").trim(),
 
-    routePath: (env.TUTOR_ROUTE_PATH || "").trim(),
+    routePath: (env.TUTOR_ROUTE_PATH || "/api/v1/tutor").trim(),
 
     chunkSize: toInt(env.TUTOR_CHUNK_SIZE, 0),
     chunkOverlap: toInt(env.TUTOR_CHUNK_OVERLAP, 0),
